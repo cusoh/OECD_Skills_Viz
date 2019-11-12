@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+
+
+<!-- Load d3.js -->
+<script src="https://d3js.org/d3.v4.js"></script>
+<script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
+<script src="https://d3js.org/d3-geo-projection.v2.min.js"></script>
+
+<!-- Create an element where the map will take place -->
+<svg id="my_dataviz" width="800" height="600"></svg>
+
+
+
+<script>
+
+
+var w = window,
+    d = document,
+    e = d.documentElement,
+    g = d.getElementsByTagName('body')[0],
+    x = w.innerWidth || e.clientWidth || g.clientWidth,
+    y = w.innerHeight|| e.clientHeight|| g.clientHeight;
+    
+// The svg
+var svg = d3.select("svg").attr("height",y).attr("width",x),
+  width = +svg.attr("width"),
+  height = +svg.attr("height");
+  
+
+// Map and projection
+var path = d3.geoPath();
+var projection = d3.geoMercator()
+  .scale(150)
+  .center([0,20])
+  .translate([width / 2, height / 2]);
+
+// Data and color scale
+var data = d3.map();
+//var colorScale = d3.scaleThreshold()
+//  .domain([-0.9,-0.7,-0.5,-0.25,0,0.25,0.45,0.55, 0.7, 0.9])
+//  .range(d3.schemeBlues[7]);
+
+var colorScale = d3.scaleThreshold()
+  .domain([-0.5,-0.25,0,0.25,0.45,])
+  .range(d3.schemeOranges[5]);
+
+
+// Load external data and boot
+//d3.queue()
+//  .defer(d3.json, "https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson")
+//  .defer(d3.csv, "https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world_population.csv", function(d) { data.set(d.code, +d.pop); })
+//  .await(ready);
+
+d3.queue()
+  .defer(d3.json, "https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson")
+  .defer(d3.csv, "https://raw.githubusercontent.com/vyi/Misc/master/skills.csv", function(d) {var myvar = parseFloat(d.Value); if(d.Skills=="Programming") data.set(d.LOCATION, +myvar); console.log("set data "+d.LOCATION+" "+ myvar)})
+  .await(ready);
+
+function ready(error, topo) {
+  
+  var countries = ['Austria', 'Austrailia','Belgium', 'Czech Republic','Canada', 'France', 'Denmark', 'Finland', 'Germany', 'Greece', 'Hungary', 'Iceland', 'Ireland', 'Italy', 'Luxembourg', 'Mexico', 'Netherlands', 'New Zealand', 'Norway', 'Poland', 'Portugal', 'Slovak Republic', 'Spain', 'Sweden', 'Switzerland', 'Turkey', 'United Kingdom', 'United States', 'Argentina', 'Brazil', 'Bulgaria', 'Chile', 'Cyprus', 'Estonia', 'Latvia', 'Lithuania', 'Peru', 'Romania', 'Slovenia', 'South Africa', 'Malaysia'];
+  //topo.features = topo.features.filter( function(d){console.log(d.properties.name); return d.properties.name=="Canada"})
+   topo.features = topo.features.filter( function(d){console.log(d.properties.name); return countries.includes(d.properties.name)})
+   
+ 
+  var scale = d3.scaleLinear().domain([-0.5, 0.5]).range([0.5, 0.005]);
+            
+  // Draw the map
+  svg.append("g")
+    .selectAll("path")
+    .data(topo.features)
+    .enter()
+    .append("path")
+      // draw each country
+      .attr("d", d3.geoPath()
+        .projection(projection)
+      )
+      // set the color of each country
+      .attr("fill", function (d) {
+        d.total = data.get(d.id) || 0;
+        console.log(d.total);
+        return colorScale(d.total);
+        
+        //return scale(d.total);
+      });
+    }
+
+</script>
